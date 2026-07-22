@@ -54,7 +54,36 @@
     min-height:100vh;
     padding-bottom:60px;
     transition:background-color .2s, color .2s;
+    position:relative;
+    overflow-x:hidden;
   }
+  .bg-fx{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .bg-fx span{
+    position:absolute;
+    bottom:-40px;
+    width:4px;
+    height:4px;
+    border-radius:50%;
+    background:var(--accent);
+    opacity:.55;
+    animation:floatUp linear infinite;
+  }
+  @keyframes floatUp{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:.55; }
+    90%{ opacity:.35; }
+    100%{ transform:translateY(-110vh) translateX(var(--drift,20px)); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .bg-fx{ display:none; }
+  }
+  header, .tabs, main, footer{ position:relative; z-index:1; }
   .display{font-family:'Rajdhani',sans-serif;}
 
   header{
@@ -115,6 +144,52 @@
   .lockbtn.unlocked{border-color:var(--skill); color:var(--skill);}
 
   main{max-width:760px; margin:0 auto; padding:6px 14px;}
+
+  .tabs{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding:4px 14px 14px;
+    max-width:760px;
+    margin:0 auto;
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:none;
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:13.5px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    padding:10px 16px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--muted);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:transform .12s;
+  }
+  .tab:active{transform:scale(0.96);}
+  .tab.active{color:#0F1014; border-color:transparent;}
+  .tab[data-t="all"].active{background:var(--accent); color:#fff;}
+  .tab[data-t="managers"].active{background:var(--managers);}
+  .tab[data-t="top"].active{background:var(--top); color:#fff;}
+  .tab[data-t="skill"].active{background:var(--skill);}
+  .tab[data-t="war"].active{background:var(--war);}
+  .tab[data-t="tryouters"].active{background:var(--tryouters); color:#fff;}
+  .tab[data-t="unskill"].active{background:var(--unskill); color:#fff;}
+
+  .solo-body{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    padding:4px 4px 0;
+  }
+  .solo-body .card{padding:12px 14px;}
+  .solo-body .avatar{width:34px; height:34px; font-size:14px;}
+  .solo-body .card-name{font-size:15px;}
 
   .tier{
     display:flex;
@@ -244,9 +319,32 @@
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
     border-radius:8px; padding:10px; font-size:14px; margin-bottom:10px; width:100%;
   }
+
+  .discord-fab{
+    position:fixed;
+    right:18px;
+    bottom:18px;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#5865F2;
+    color:#fff;
+    text-decoration:none;
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:13.5px;
+    letter-spacing:.03em;
+    padding:12px 16px;
+    border-radius:999px;
+    box-shadow:0 8px 20px rgba(88,101,242,0.35);
+  }
+  .discord-fab svg{width:18px; height:18px; flex:none;}
 </style>
 </head>
 <body>
+
+<div class="bg-fx" id="bgFx"></div>
 
 <header>
   <p class="eyebrow">CREW TIER LIST</p>
@@ -257,12 +355,18 @@
   </div>
 </header>
 
+<div class="tabs" id="tabs"></div>
 <main id="tiers"></main>
 
 <footer>
   <span class="status" id="status">Cargando…</span>
   <button class="reset" id="resetBtn">Reiniciar datos</button>
 </footer>
+
+<a class="discord-fab" href="https://discord.gg/QxjR7vTxBU" target="_blank" rel="noopener">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.099.246.198.373.292a.077.077 0 0 1-.006.128 12.3 12.3 0 0 1-1.873.891.076.076 0 0 0-.04.107c.36.698.772 1.362 1.225 1.993a.077.077 0 0 0 .084.029 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.673-3.549-13.66a.06.06 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.211 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.211 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+  Discord
+</a>
 
 <div id="modalRoot"></div>
 
@@ -298,6 +402,7 @@ const catLabel = id => CATEGORIES.find(c => c.id === id)?.label || id;
 let state = { title: "", data: {} };
 let unlocked = false;
 let currentPin = null;
+let activeTab = 'all';
 
 TIERS.forEach(t => state.data[t] = []);
 
@@ -305,49 +410,92 @@ function initials(name){
   return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("");
 }
 
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = "";
+  const allTabs = [{ id: 'all', label: 'Todos' }, ...CATEGORIES];
+  allTabs.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (activeTab === c.id ? ' active' : '');
+    btn.dataset.t = c.id;
+    btn.textContent = c.label;
+    btn.onclick = () => { activeTab = c.id; render(); };
+    tabs.appendChild(btn);
+  });
+}
+
+function renderCard(person, t, list, idx){
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="avatar">${initials(person.name)}</div>
+    <div class="card-text">
+      <span class="card-name"></span>
+      ${person.note ? '<span class="card-note"></span>' : ''}
+    </div>
+  `;
+  card.querySelector('.card-name').textContent = person.name;
+  if(person.note) card.querySelector('.card-note').textContent = person.note;
+  if(unlocked){
+    const del = document.createElement('button');
+    del.textContent = '✕';
+    del.setAttribute('aria-label', 'Quitar');
+    del.onclick = () => { list.splice(idx,1); save(); render(); };
+    card.appendChild(del);
+  }
+  return card;
+}
+
 function render(){
   document.getElementById('title').value = state.title;
+  renderTabs();
   const wrap = document.getElementById('tiers');
   wrap.innerHTML = "";
-  TIERS.forEach(t => {
-    const row = document.createElement('div');
-    row.className = 'tier';
-    row.dataset.t = t;
-    const label = document.createElement('div');
-    label.className = 'tier-label';
-    label.textContent = catLabel(t);
-    const body = document.createElement('div');
-    body.className = 'tier-body';
 
+  if(activeTab === 'all'){
+    TIERS.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'tier';
+      row.dataset.t = t;
+      const label = document.createElement('div');
+      label.className = 'tier-label';
+      label.textContent = catLabel(t);
+      const body = document.createElement('div');
+      body.className = 'tier-body';
+
+      const list = state.data[t] || [];
+      if(list.length === 0 && !unlocked){
+        const hint = document.createElement('span');
+        hint.className = 'empty-hint';
+        hint.textContent = 'Sin personas todavía';
+        body.appendChild(hint);
+      }
+      list.forEach((person, idx) => body.appendChild(renderCard(person, t, list, idx)));
+
+      if(unlocked){
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-card';
+        addBtn.textContent = '+ Agregar';
+        addBtn.onclick = () => openAddModal(t);
+        body.appendChild(addBtn);
+      }
+
+      row.appendChild(label);
+      row.appendChild(body);
+      wrap.appendChild(row);
+    });
+  } else {
+    const t = activeTab;
     const list = state.data[t] || [];
+    const body = document.createElement('div');
+    body.className = 'solo-body';
     if(list.length === 0 && !unlocked){
       const hint = document.createElement('span');
       hint.className = 'empty-hint';
       hint.textContent = 'Sin personas todavía';
       body.appendChild(hint);
     }
-    list.forEach((person, idx) => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="avatar">${initials(person.name)}</div>
-        <div class="card-text">
-          <span class="card-name"></span>
-          ${person.note ? '<span class="card-note"></span>' : ''}
-        </div>
-      `;
-      card.querySelector('.card-name').textContent = person.name;
-      if(person.note) card.querySelector('.card-note').textContent = person.note;
-      if(unlocked){
-        const del = document.createElement('button');
-        del.textContent = '✕';
-        del.setAttribute('aria-label', 'Quitar');
-        del.onclick = () => { list.splice(idx,1); save(); render(); };
-        card.appendChild(del);
-      }
-      body.appendChild(card);
-    });
-
+    list.forEach((person, idx) => body.appendChild(renderCard(person, t, list, idx)));
     if(unlocked){
       const addBtn = document.createElement('button');
       addBtn.className = 'add-card';
@@ -355,11 +503,8 @@ function render(){
       addBtn.onclick = () => openAddModal(t);
       body.appendChild(addBtn);
     }
-
-    row.appendChild(label);
-    row.appendChild(body);
-    wrap.appendChild(row);
-  });
+    wrap.appendChild(body);
+  }
 
   const btn = document.getElementById('lockBtn');
   btn.textContent = unlocked ? '🔓 Guardado en vivo' : '🔒 Editar';
@@ -515,6 +660,23 @@ document.getElementById('lockBtn').onclick = () => {
 
 document.getElementById('title').addEventListener('change', save);
 
+// ---- fondo animado ----
+(function initBgFx(){
+  const holder = document.getElementById('bgFx');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce) return;
+  const COUNT = 22;
+  for(let i=0;i<COUNT;i++){
+    const dot = document.createElement('span');
+    dot.style.left = Math.random()*100 + '%';
+    dot.style.setProperty('--drift', (Math.random()*60-30) + 'px');
+    dot.style.animationDuration = (10 + Math.random()*14) + 's';
+    dot.style.animationDelay = (Math.random()*14) + 's';
+    dot.style.opacity = (0.25 + Math.random()*0.35).toFixed(2);
+    holder.appendChild(dot);
+  }
+})();
+
 // ---- tema de color ----
 const THEMES = ['black','blue','white'];
 function applyTheme(t){
@@ -564,3 +726,4 @@ load();
 </script>
 </body>
 </html>
+
