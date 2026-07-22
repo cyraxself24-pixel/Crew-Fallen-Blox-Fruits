@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="black">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Crew Tier List</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#0F1014;
+    --panel:#1A1C23;
+    --panel-2:#20222B;
+    --line:#2B2E38;
+    --text:#EDEEF2;
+    --muted:#8A8E9C;
+    --glow: rgba(47,143,255,0.14);
+    --managers:#FFD24A;
+    --top:#FF3B5C;
+    --skill:#22C3EE;
+    --war:#FF7A3D;
+    --tryouters:#8B5CF6;
+    --unskill:#6B7080;
+    --accent:#2F8FFF;
+  }
+  html[data-theme="blue"]{
+    --bg:#050B18;
+    --panel:#0B1830;
+    --panel-2:#102246;
+    --line:#1E3A66;
+    --text:#EAF2FF;
+    --muted:#8FB8EC;
+    --glow: rgba(47,143,255,0.30);
+  }
+  html[data-theme="white"]{
+    --bg:#FFFFFF;
+    --panel:#F7F8FA;
+    --panel-2:#EFF1F5;
+    --line:#E1E4EA;
+    --text:#14151A;
+    --muted:#6B7080;
+    --glow: rgba(47,143,255,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -10%, var(--glow), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+    transition:background-color .2s, color .2s;
+  }
+  .display{font-family:'Rajdhani',sans-serif;}
+
+  header{
+    padding:28px 18px 18px;
+    max-width:760px;
+    margin:0 auto;
+    position:relative;
+  }
+  .eyebrow{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:600;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    font-size:11px;
+    color:var(--muted);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:34px;
+    letter-spacing:.01em;
+    margin:0;
+    line-height:1.05;
+    border:none;
+    background:transparent;
+    color:var(--text);
+    width:100%;
+    outline:none;
+    padding:0;
+  }
+  h1::placeholder{color:#484c58;}
+  h1[disabled]{color:var(--text); opacity:1; -webkit-text-fill-color:var(--text);}
+
+  .header-actions{
+    position:absolute;
+    top:28px;
+    right:18px;
+    display:flex;
+    gap:8px;
+  }
+  .themebtn, .lockbtn{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'Rajdhani',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:.05em;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .themebtn:focus-visible, .lockbtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .lockbtn.unlocked{border-color:var(--skill); color:var(--skill);}
+
+  main{max-width:760px; margin:0 auto; padding:6px 14px;}
+
+  .tier{
+    display:flex;
+    flex-direction:column;
+    border-radius:12px;
+    overflow:hidden;
+    margin-bottom:10px;
+    border:1px solid var(--line);
+    background:var(--panel);
+  }
+  .tier-label{
+    padding:9px 14px;
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:#0F1014;
+  }
+  .tier-body{
+    flex:1;
+    padding:12px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:flex-start;
+    align-content:flex-start;
+  }
+  .tier[data-t="managers"] .tier-label{background:var(--managers);}
+  .tier[data-t="top"] .tier-label{background:var(--top); color:#fff;}
+  .tier[data-t="skill"] .tier-label{background:var(--skill);}
+  .tier[data-t="war"] .tier-label{background:var(--war);}
+  .tier[data-t="tryouters"] .tier-label{background:var(--tryouters); color:#fff;}
+  .tier[data-t="unskill"] .tier-label{background:var(--unskill); color:#fff;}
+
+  .card{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .avatar{
+    width:26px; height:26px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--skill));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:12px;
+    color:#0F1014;
+    flex:none;
+  }
+  .card-text{display:flex; flex-direction:column; min-width:0;}
+  .card-name{font-size:13.5px; font-weight:600; line-height:1.2; white-space:nowrap;}
+  .card-note{font-size:11px; color:var(--muted); line-height:1.2; white-space:nowrap;}
+  .card button{
+    background:none; border:none; color:var(--muted);
+    cursor:pointer; font-size:14px; padding:2px 4px; line-height:1;
+    flex:none;
+  }
+  .card button:hover{color:var(--top);}
+
+  .add-card{
+    border:1px dashed var(--line);
+    background:transparent;
+    color:var(--muted);
+    border-radius:8px;
+    padding:8px 12px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .add-card:hover{border-color:var(--accent); color:var(--accent);}
+
+  .empty-hint{
+    color:#4B4F5C;
+    font-size:12.5px;
+    padding:6px 2px;
+    align-self:center;
+  }
+
+  footer{
+    max-width:760px;
+    margin:18px auto 0;
+    padding:0 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .status{font-size:11.5px; color:var(--muted);}
+  .reset{
+    background:none; border:none; color:var(--muted);
+    font-size:11.5px; text-decoration:underline; cursor:pointer;
+  }
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(10,10,13,0.72);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50; padding:20px;
+  }
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:22px; width:100%; max-width:320px;
+  }
+  .modal h2{font-family:'Rajdhani',sans-serif; font-size:19px; margin:0 0 4px;}
+  .modal p{font-size:12.5px; color:var(--muted); margin:0 0 14px;}
+  .modal input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; color:var(--text); font-size:15px;
+    margin-bottom:10px; outline:none; font-family:'Inter',sans-serif;
+  }
+  .modal input:focus{border-color:var(--accent);}
+  .modal-row{display:flex; gap:8px;}
+  .modal button.primary{
+    flex:1; background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:10px; font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  .modal button.ghost{
+    flex:none; background:none; border:1px solid var(--line); color:var(--muted);
+    border-radius:8px; padding:10px 14px; font-size:13.5px; cursor:pointer;
+  }
+  .modal .err{color:var(--top); font-size:12px; min-height:16px; margin:-4px 0 8px;}
+
+  select.tier-select{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:10px; font-size:14px; margin-bottom:10px; width:100%;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">CREW TIER LIST</p>
+  <input id="title" class="display" placeholder="Nombre de tu crew" disabled />
+  <div class="header-actions">
+    <button class="themebtn" id="themeBtn">🎨</button>
+    <button class="lockbtn" id="lockBtn">🔒 Editar</button>
+  </div>
+</header>
+
+<main id="tiers"></main>
+
+<footer>
+  <span class="status" id="status">Cargando…</span>
+  <button class="reset" id="resetBtn">Reiniciar datos</button>
+</footer>
+
+<div id="modalRoot"></div>
+
+<script>
+// ============================================================
+// 1) PEGA AQUÍ TU CONFIG DE FIREBASE (la sacas de la consola de
+//    Firebase, en "Configuración del proyecto" > tus apps > SDK).
+//    Reemplaza todo este objeto por el tuyo.
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBFpJAx6zA_QTK3RFP9ZiT_phOFJVYw-c0",
+  authDomain: "fallenbloxfruitscompetitive.firebaseapp.com",
+  databaseURL: "https://fallenbloxfruitscompetitive-default-rtdb.firebaseio.com",
+  projectId: "fallenbloxfruitscompetitive",
+  storageBucket: "fallenbloxfruitscompetitive.firebasestorage.app",
+  messagingSenderId: "492181049329",
+  appId: "1:492181049329:web:6e183ccdfe9b773a5d7e50"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const CATEGORIES = [
+  { id: 'managers',  label: 'Managers' },
+  { id: 'top',       label: 'Top players' },
+  { id: 'skill',     label: 'Skill player' },
+  { id: 'war',       label: 'War fighters' },
+  { id: 'tryouters', label: 'Tryouters' },
+  { id: 'unskill',   label: 'Unskill player' }
+];
+const TIERS = CATEGORIES.map(c => c.id);
+const catLabel = id => CATEGORIES.find(c => c.id === id)?.label || id;
+
+let state = { title: "", data: {} };
+let unlocked = false;
+let currentPin = null;
+
+TIERS.forEach(t => state.data[t] = []);
+
+function initials(name){
+  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("");
+}
+
+function render(){
+  document.getElementById('title').value = state.title;
+  const wrap = document.getElementById('tiers');
+  wrap.innerHTML = "";
+  TIERS.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'tier';
+    row.dataset.t = t;
+    const label = document.createElement('div');
+    label.className = 'tier-label';
+    label.textContent = catLabel(t);
+    const body = document.createElement('div');
+    body.className = 'tier-body';
+
+    const list = state.data[t] || [];
+    if(list.length === 0 && !unlocked){
+      const hint = document.createElement('span');
+      hint.className = 'empty-hint';
+      hint.textContent = 'Sin personas todavía';
+      body.appendChild(hint);
+    }
+    list.forEach((person, idx) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="avatar">${initials(person.name)}</div>
+        <div class="card-text">
+          <span class="card-name"></span>
+          ${person.note ? '<span class="card-note"></span>' : ''}
+        </div>
+      `;
+      card.querySelector('.card-name').textContent = person.name;
+      if(person.note) card.querySelector('.card-note').textContent = person.note;
+      if(unlocked){
+        const del = document.createElement('button');
+        del.textContent = '✕';
+        del.setAttribute('aria-label', 'Quitar');
+        del.onclick = () => { list.splice(idx,1); save(); render(); };
+        card.appendChild(del);
+      }
+      body.appendChild(card);
+    });
+
+    if(unlocked){
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-card';
+      addBtn.textContent = '+ Agregar';
+      addBtn.onclick = () => openAddModal(t);
+      body.appendChild(addBtn);
+    }
+
+    row.appendChild(label);
+    row.appendChild(body);
+    wrap.appendChild(row);
+  });
+
+  const btn = document.getElementById('lockBtn');
+  btn.textContent = unlocked ? '🔓 Guardado en vivo' : '🔒 Editar';
+  btn.classList.toggle('unlocked', unlocked);
+  document.getElementById('title').disabled = !unlocked;
+}
+
+async function load(){
+  const status = document.getElementById('status');
+  try{
+    const snap = await db.ref('crewTierlist/data').get();
+    const parsed = snap.exists() ? snap.val() : null;
+    if(parsed){
+      state.title = parsed.title || "Mi Crew";
+      TIERS.forEach(t => state.data[t] = (parsed.data && parsed.data[t]) || []);
+    } else {
+      state.title = "Mi Crew";
+    }
+    status.textContent = "Los cambios se ven al instante para todos con el link.";
+    // se queda escuchando cambios en vivo (por si editas desde otro dispositivo)
+    db.ref('crewTierlist/data').on('value', s => {
+      const v = s.val();
+      if(!v) return;
+      state.title = v.title || state.title;
+      TIERS.forEach(t => state.data[t] = (v.data && v.data[t]) || []);
+      if(!unlocked) render();
+    });
+  }catch(e){
+    state.title = "Mi Crew";
+    status.textContent = "No se pudo cargar. Revisa tu firebaseConfig.";
+  }
+  try{
+    const pinSnap = await db.ref('crewTierlist/pin').get();
+    currentPin = pinSnap.exists() ? pinSnap.val() : null;
+  }catch(e){
+    currentPin = null;
+  }
+  render();
+}
+
+async function save(){
+  const status = document.getElementById('status');
+  try{
+    state.title = document.getElementById('title').value || "Mi Crew";
+    await db.ref('crewTierlist/data').set(state);
+    status.textContent = "Guardado ✓";
+  }catch(e){
+    status.textContent = "Error al guardar";
+  }
+}
+
+// ---- modales ----
+function closeModal(){ document.getElementById('modalRoot').innerHTML = ""; }
+
+function openPinModal(mode){
+  // mode: 'set' | 'check'
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="overlay">
+      <div class="modal">
+        <h2 class="display">${mode === 'set' ? 'Crea tu PIN' : 'Ingresa tu PIN'}</h2>
+        <p>${mode === 'set' ? 'Lo vas a usar cada vez que quieras editar la lista desde cualquier dispositivo.' : 'Solo tú deberías conocerlo.'}</p>
+        <input id="pinInput" type="password" inputmode="numeric" placeholder="PIN" maxlength="8" />
+        <div class="err" id="pinErr"></div>
+        <div class="modal-row">
+          <button class="ghost" id="pinCancel">Cancelar</button>
+          <button class="primary" id="pinOk">${mode === 'set' ? 'Guardar PIN' : 'Entrar'}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('pinCancel').onclick = closeModal;
+  document.getElementById('pinInput').focus();
+  const submit = async () => {
+    const val = document.getElementById('pinInput').value.trim();
+    if(val.length < 3){
+      document.getElementById('pinErr').textContent = 'Usa al menos 3 caracteres.';
+      return;
+    }
+    if(mode === 'set'){
+      try{
+        await db.ref('crewTierlist/pin').set(val);
+        currentPin = val;
+        unlocked = true;
+        closeModal();
+        render();
+      }catch(e){
+        document.getElementById('pinErr').textContent = 'No se pudo guardar el PIN.';
+      }
+    } else {
+      if(val === currentPin){
+        unlocked = true;
+        closeModal();
+        render();
+      } else {
+        document.getElementById('pinErr').textContent = 'PIN incorrecto.';
+      }
+    }
+  };
+  document.getElementById('pinOk').onclick = submit;
+  document.getElementById('pinInput').addEventListener('keydown', e => { if(e.key === 'Enter') submit(); });
+}
+
+function openAddModal(tier){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="overlay">
+      <div class="modal">
+        <h2 class="display">Agregar a ${catLabel(tier)}</h2>
+        <p>Nombre y, si quieres, un rol o nota corta.</p>
+        <input id="nameInput" placeholder="Nombre" />
+        <input id="noteInput" placeholder="Rol o nota (opcional)" />
+        <select class="tier-select" id="tierSelect">
+          ${CATEGORIES.map(c => `<option value="${c.id}" ${c.id===tier?'selected':''}>${c.label}</option>`).join('')}
+        </select>
+        <div class="err" id="addErr"></div>
+        <div class="modal-row">
+          <button class="ghost" id="addCancel">Cancelar</button>
+          <button class="primary" id="addOk">Agregar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('addCancel').onclick = closeModal;
+  document.getElementById('nameInput').focus();
+  document.getElementById('addOk').onclick = () => {
+    const name = document.getElementById('nameInput').value.trim();
+    const note = document.getElementById('noteInput').value.trim();
+    const t = document.getElementById('tierSelect').value;
+    if(!name){
+      document.getElementById('addErr').textContent = 'Escribe un nombre.';
+      return;
+    }
+    state.data[t].push({ name, note });
+    closeModal();
+    save();
+    render();
+  };
+}
+
+document.getElementById('lockBtn').onclick = () => {
+  if(unlocked){
+    unlocked = false;
+    render();
+    return;
+  }
+  if(currentPin){
+    openPinModal('check');
+  } else {
+    openPinModal('set');
+  }
+};
+
+document.getElementById('title').addEventListener('change', save);
+
+// ---- tema de color ----
+const THEMES = ['black','blue','white'];
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  try{ localStorage.setItem('crew-theme', t); }catch(e){}
+}
+(function initTheme(){
+  let saved = 'black';
+  try{ saved = localStorage.getItem('crew-theme') || 'black'; }catch(e){}
+  applyTheme(saved);
+})();
+document.getElementById('themeBtn').onclick = () => {
+  const current = document.documentElement.getAttribute('data-theme') || 'black';
+  const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+  applyTheme(next);
+};
+
+document.getElementById('resetBtn').onclick = () => {
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="overlay">
+      <div class="modal">
+        <h2 class="display">¿Borrar todo?</h2>
+        <p>Esto elimina la lista completa y el PIN. No se puede deshacer.</p>
+        <div class="modal-row">
+          <button class="ghost" id="rCancel">Cancelar</button>
+          <button class="primary" id="rOk" style="background:var(--top)">Borrar todo</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('rCancel').onclick = closeModal;
+  document.getElementById('rOk').onclick = async () => {
+    try{
+      await db.ref('crewTierlist').remove();
+    }catch(e){}
+    TIERS.forEach(t => state.data[t] = []);
+    state.title = "Mi Crew";
+    currentPin = null;
+    unlocked = false;
+    closeModal();
+    render();
+  };
+};
+
+load();
+</script>
+</body>
+</html>
